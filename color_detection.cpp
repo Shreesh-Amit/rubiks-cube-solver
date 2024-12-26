@@ -9,8 +9,8 @@ struct interactiveRect{
     Point topLeft;
     Point bottomRight;
     Scalar color;
-    int currentColor;
-    int nextColor;
+    string currentColor;
+    string nextColor;
 };
 
 vector <string> colors = {"White","Yellow","Pink","Orange","Blue","Green"};
@@ -24,7 +24,7 @@ map<string, Scalar> colorMap = {
         {"Orange", Scalar(0, 165, 255)}
     };
 
-map<string,vector<vector<interactiveRect>>> inteRectangles;
+map<string,vector<vector<interactiveRect>>> rectangles;
 
 //function that returns the Euclidean distance between two pixels
 float distanceEuclidean(Vec3b color,Vec3b target){
@@ -59,8 +59,20 @@ string closestColor(Vec3b color){
 
 void onMouse(int event,int x,int y,int,void*){
     if(event==EVENT_LBUTTONDOWN){
-        for(auto& rect: inteRectangles){
-            //rect.currentColor=nextColor;
+        for(auto& rectmap: rectangles){
+            auto& rect = rectmap.second;
+            for(int row=0;row<3;row++){
+                for (int col = 0; col < 3; col++) {
+                    if(rect[row][col].topLeft.x <= x && x <= rect[row][col].bottomRight.x &&
+                    rect[row][col].topLeft.y <= y && y <= rect[row][col].bottomRight.y){
+                        rect[row][col].currentColor=rect[row][col].nextColor;
+                        rect[row][col].nextColor=colors[((find(colors.begin(),colors.end(),rect[row][col].nextColor)-colors.begin())+1)%6];
+                        rect[row][col].color=colorMap[rect[row][col].currentColor];
+                        cout<< rect[row][col].currentColor << endl;
+                        break;
+                    }
+                }
+            }
         }
     }
 }
@@ -85,7 +97,7 @@ int main(){
         string faceName = face.first;
         Point origin = face.second;
 
-        vector<vector<interactiveRect>> rectangles;
+        vector<vector<interactiveRect>> face_rectangles;
 
         for(int row=0;row<3;row++){
 
@@ -93,36 +105,13 @@ int main(){
             for (int col = 0; col < 3; col++) {
                     Point topLeft = origin + Point(col * squareSize, row * squareSize);
                     Point bottomRight = topLeft + Point(squareSize, squareSize);
-                    rectangle_row.push_back({topLeft,bottomRight,Scalar(160,169,169)});
+                    rectangle_row.push_back({topLeft,bottomRight,Scalar(160,169,169),"","White"});
                 }
-            rectangles.push_back(rectangle_row);
+            face_rectangles.push_back(rectangle_row);
         }
 
-        inteRectangles[faceName]=rectangles;
+        rectangles[faceName]=face_rectangles;
     }
-
-    map<string,vector<vector<Scalar>>> previewColor={
-        {"L",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
-        {"F",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
-        {"U",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
-        {"D",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
-        {"R",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
-        {"B",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
-              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
-    };
-
-
 
     //instantiating an object cap and opening default camera - 0
     VideoCapture cap(0);
@@ -157,28 +146,26 @@ int main(){
     string currentFace=listFaces[0];
     string nextFace=listFaces[1];
 
+    namedWindow("Preview");
+    setMouseCallback("Preview",onMouse);
+
     while(true){
 
         //Redrawing the preview Screen
         Mat preview=canvas.clone();
 
-        for (const auto &face : facePositions)
-        {
-            string faceName = face.first;
-            Point origin = face.second;
+        for (const auto &rectmap : rectangles){
+            string faceName = rectmap.first;
+            vector<vector<interactiveRect>> rect = rectmap.second;
 
-            for (int row = 0; row < 3; row++)
-            {
-                for (int col = 0; col < 3; col++)
-                {
-                    Point topLeft = origin + Point(col * squareSize, row * squareSize);
-                    Point bottomRight = topLeft + Point(squareSize, squareSize);
-                    rectangle(preview, topLeft, bottomRight, previewColor[faceName][row][col], -1);
-                    rectangle(preview, topLeft, bottomRight, Scalar(0, 0, 0), 1);
+            for (int row = 0; row < 3; row++){
+                for (int col = 0; col < 3; col++){
+                    rectangle(preview, rect[row][col].topLeft,rect[row][col].bottomRight,rect[row][col].color, -1);
+                    rectangle(preview, rect[row][col].topLeft,rect[row][col].bottomRight,Scalar(0,0,0), 1);
                 }
             }
 
-            Point center = origin + Point(70, 80);
+            Point center = rect[0][0].topLeft + Point(70, 80);
             putText(preview, faceName, center, FONT_HERSHEY_COMPLEX, 0.5, Scalar(0, 0, 0), 2);
         }
         
@@ -235,16 +222,9 @@ int main(){
         
         imshow("Preview",preview);
         
-        //vector<float> B={};
-        //vector<float> G={};
-        //vector<float> R={};
-        //float sumB=0;
-        //float sumG=0;
-        //float sumR=0;
         
         //waitKey() waits for key press for time in ms;  if not pressed returns -1 
         //else return ascii values of key pressed
-
         char pressed_key = (char)waitKey(30);
 
         if(pressed_key == 'q') break;
@@ -265,42 +245,32 @@ int main(){
                     //approximates the pixel color to nearest rubiks' cube color
                     string approxColor = closestColor(pixel);
 
-                    if(col==0) previewColor[currentFace][row][col+2]=colorMap[approxColor];
-                    else if(col==2) previewColor[currentFace][row][col-2]=colorMap[approxColor];
-                    else previewColor[currentFace][row][col]=colorMap[approxColor];
+                    if(col==0){
+                        rectangles[currentFace][row][col+2].color=colorMap[approxColor];
+                        rectangles[currentFace][row][col+2].currentColor=approxColor;
+                        rectangles[currentFace][row][col+2].nextColor=colors[((find(colors.begin(),colors.end(),approxColor)-colors.begin())+1)%6];
+                    }
+                    
+                    else if(col==2) {
+                        rectangles[currentFace][row][col-2].color=colorMap[approxColor];
+                        rectangles[currentFace][row][col-2].currentColor=approxColor;
+                        rectangles[currentFace][row][col-2].nextColor=colors[((find(colors.begin(),colors.end(),approxColor)-colors.begin())+1)%6];
+                    }
 
-                    //cout << "Square[" << row << "]["<< col << "] BGR values= " << "[" << avgColor[0] 
-                    //<<  "," << avgColor[1] << "," << avgColor[2] << "]" << endl;
+                    else {
+                        rectangles[currentFace][row][col].color=colorMap[approxColor];
+                        rectangles[currentFace][row][col].currentColor=approxColor;
+                        rectangles[currentFace][row][col].nextColor=colors[((find(colors.begin(),colors.end(),approxColor)-colors.begin())+1)%6];
+                    }
 
-                    cout << "Square[" << col << "]["<< row << "]: " << approxColor << endl;
+                    //cout << "Square[" << col << "]["<< row << "]: " << approxColor << endl;
 
-                    //B.push_back(avgColor[0]);
-                    //G.push_back(avgColor[1]);
-                    //R.push_back(avgColor[2]);
                 }
             }
             
             currentFace=nextFace;
             nextFace=listFaces[((find(listFaces.begin(),listFaces.end(),nextFace)-listFaces.begin())+1)%6];
 
-            //for(float num : B){
-              //sumB+=num;
-            //}
-
-            //cout << "Average B:" << static_cast<double>(sumB)/B.size() << endl;
-
-            //for(float num : G){
-              //sumG+=num;
-            //}
-
-            //cout << "Average G:" << static_cast<double>(sumG)/G.size() << endl;
-
-            //for(float num : R){
-              //sumR+=num;
-            //}
-
-            //cout << "Average R:" << static_cast<double>(sumR)/R.size() << endl;
-            
         }
 
     }
