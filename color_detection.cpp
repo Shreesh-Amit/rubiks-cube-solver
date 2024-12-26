@@ -4,6 +4,28 @@
 using namespace std;
 using namespace cv;
 
+
+struct interactiveRect{
+    Point topLeft;
+    Point bottomRight;
+    Scalar color;
+    int currentColor;
+    int nextColor;
+};
+
+vector <string> colors = {"White","Yellow","Pink","Orange","Blue","Green"};
+
+map<string, Scalar> colorMap = {
+        {"White", Scalar(255, 255, 255)},
+        {"Yellow", Scalar(0, 255, 255)},
+        {"Green", Scalar(144, 238, 144)},
+        {"Blue", Scalar(255, 191, 0)},
+        {"Pink", Scalar(203, 192, 255)},
+        {"Orange", Scalar(0, 165, 255)}
+    };
+
+map<string,vector<vector<interactiveRect>>> inteRectangles;
+
 //function that returns the Euclidean distance between two pixels
 float distanceEuclidean(Vec3b color,Vec3b target){
     return sqrt(pow(target[0]-color[0],2)+pow(target[1]-color[1],2)+pow(target[2]-color[2],2));
@@ -35,12 +57,75 @@ string closestColor(Vec3b color){
     return closeColor;
 }
 
+void onMouse(int event,int x,int y,int,void*){
+    if(event==EVENT_LBUTTONDOWN){
+        for(auto& rect: inteRectangles){
+            //rect.currentColor=nextColor;
+        }
+    }
+}
 
 int main(){
 
+    int squareSize = 50; // Size of each small square
+    int margin = 10;     // Space between faces
+    int width = squareSize * 12 + margin * 3 + 50;
+    int height = squareSize * 9 + margin * 2 + 50;
+
+    map<string, Point> facePositions = {
+        {"L", Point(25, 25 + squareSize * 3 + margin)},
+        {"F", Point(25 + squareSize * 3 + margin, 25 + squareSize * 3 + margin)},
+        {"U", Point(25 + squareSize * 3 + margin, 25)},
+        {"D", Point(25 + squareSize * 3 + margin, 25 + squareSize * 6 + margin * 2)},
+        {"R", Point(25 + squareSize * 6 + margin * 2, 25 + squareSize * 3 + margin)},
+        {"B", Point(25 + squareSize * 9 + margin * 3, 25 + squareSize * 3 + margin)}};
+
+
+    for(const auto& face:facePositions){
+        string faceName = face.first;
+        Point origin = face.second;
+
+        vector<vector<interactiveRect>> rectangles;
+
+        for(int row=0;row<3;row++){
+
+            vector<interactiveRect> rectangle_row;
+            for (int col = 0; col < 3; col++) {
+                    Point topLeft = origin + Point(col * squareSize, row * squareSize);
+                    Point bottomRight = topLeft + Point(squareSize, squareSize);
+                    rectangle_row.push_back({topLeft,bottomRight,Scalar(160,169,169)});
+                }
+            rectangles.push_back(rectangle_row);
+        }
+
+        inteRectangles[faceName]=rectangles;
+    }
+
+    map<string,vector<vector<Scalar>>> previewColor={
+        {"L",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
+        {"F",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
+        {"U",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
+        {"D",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
+        {"R",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
+        {"B",{{Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)},
+              {Scalar(169,169,169),Scalar(169,169,169),Scalar(169,169,169)}}},
+    };
+
+
+
     //instantiating an object cap and opening default camera - 0
     VideoCapture cap(0);
-
 
     if(!cap.isOpened()){
         cerr << "[ERROR]: Camera unable to open" << endl;
@@ -65,7 +150,40 @@ int main(){
     Point refOrigin(450,30);
     int refSize = 50;
 
+    Mat canvas = Mat::zeros(Size(width, height), CV_8UC3);
+    canvas.setTo(Scalar(255, 255, 224));
+
+    vector<string> listFaces={"U","R","F","D","L","B"};
+    string currentFace=listFaces[0];
+    string nextFace=listFaces[1];
+
     while(true){
+
+        //Redrawing the preview Screen
+        Mat preview=canvas.clone();
+
+        for (const auto &face : facePositions)
+        {
+            string faceName = face.first;
+            Point origin = face.second;
+
+            for (int row = 0; row < 3; row++)
+            {
+                for (int col = 0; col < 3; col++)
+                {
+                    Point topLeft = origin + Point(col * squareSize, row * squareSize);
+                    Point bottomRight = topLeft + Point(squareSize, squareSize);
+                    rectangle(preview, topLeft, bottomRight, previewColor[faceName][row][col], -1);
+                    rectangle(preview, topLeft, bottomRight, Scalar(0, 0, 0), 1);
+                }
+            }
+
+            Point center = origin + Point(70, 80);
+            putText(preview, faceName, center, FONT_HERSHEY_COMPLEX, 0.5, Scalar(0, 0, 0), 2);
+        }
+        
+        putText(preview,"Scan the Face:"+currentFace,Point(450,50),FONT_HERSHEY_COMPLEX,0.6,Scalar(0,0,0),1);
+
         //capturing a image and storing it in frame
         cap >> frame;
 
@@ -89,14 +207,6 @@ int main(){
         //drawing the reference squares on the frame
         for(int row=0;row<3;row++){
             for(int col=0;col<3;col++){
-                map<string, Scalar> colorMap = {
-                    {"White", Scalar(255, 255, 255)},
-                    {"Yellow", Scalar(0, 255, 255)},
-                    {"Green", Scalar(144, 238, 144)},
-                    {"Blue", Scalar(255, 191, 0)},
-                    {"Pink", Scalar(203, 192, 255)},
-                    {"Orange", Scalar(0, 165, 255)}
-                };
 
                 Point topLeft = {gridOrigin.x + col*gridSpacing, gridOrigin.y + row*gridSpacing};
 
@@ -114,12 +224,16 @@ int main(){
 
                 rectangle(frame,topLeft,bottomRight,colorMap[approxColor],-1);
 
+                //Draw borders for the reference square
+                rectangle(frame,topLeft,bottomRight,Scalar(0,0,0),1);
+
             }
         }
 
         //display the frame
         imshow("Camera Feed",frame);        
         
+        imshow("Preview",preview);
         
         //vector<float> B={};
         //vector<float> G={};
@@ -130,12 +244,12 @@ int main(){
         
         //waitKey() waits for key press for time in ms;  if not pressed returns -1 
         //else return ascii values of key pressed
+
         char pressed_key = (char)waitKey(30);
 
         if(pressed_key == 'q') break;
 
         if(pressed_key == 'c'){
-
             for (int row = 0; row < 3; row++){
                 for (int col = 0; col < 3; col++){
 
@@ -151,7 +265,10 @@ int main(){
                     //approximates the pixel color to nearest rubiks' cube color
                     string approxColor = closestColor(pixel);
 
-                    
+                    if(col==0) previewColor[currentFace][row][col+2]=colorMap[approxColor];
+                    else if(col==2) previewColor[currentFace][row][col-2]=colorMap[approxColor];
+                    else previewColor[currentFace][row][col]=colorMap[approxColor];
+
                     //cout << "Square[" << row << "]["<< col << "] BGR values= " << "[" << avgColor[0] 
                     //<<  "," << avgColor[1] << "," << avgColor[2] << "]" << endl;
 
@@ -163,6 +280,9 @@ int main(){
                 }
             }
             
+            currentFace=nextFace;
+            nextFace=listFaces[((find(listFaces.begin(),listFaces.end(),nextFace)-listFaces.begin())+1)%6];
+
             //for(float num : B){
               //sumB+=num;
             //}
@@ -184,7 +304,7 @@ int main(){
         }
 
     }
-    
+
     //releases the camera
     cap.release();
 
