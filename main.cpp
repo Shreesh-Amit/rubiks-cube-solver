@@ -16,10 +16,13 @@ struct interactiveRect{
 };
 
 int cycle=0;
+int colouredFacelets=0;
+bool allFaceletscoloured=false;
 int squareSize = 50; // Size of each small square
 int margin = 10;     // Space between faces
+string solution;
 int width = squareSize * 12 + margin * 3 + 50;
-int height = squareSize * 9 + margin * 2 + 50;
+int height = squareSize * 9 + margin * 2 + 100;
 
 vector <string> colors = {"White","Yellow","Pink","Orange","Blue","Green"};
 
@@ -30,6 +33,15 @@ map<string, Scalar> colorMap = {
         {"Blue", Scalar(255, 191, 0)},
         {"Pink", Scalar(203, 192, 255)},
         {"Orange", Scalar(0, 165, 255)}
+    };
+
+map<string, Point> facePositions = {
+    {"U", Point(25 + squareSize * 3 + margin, 25)},
+    {"R", Point(25 + squareSize * 6 + margin * 2, 25 + squareSize * 3 + margin)},
+    {"F", Point(25 + squareSize * 3 + margin, 25 + squareSize * 3 + margin)},
+    {"D", Point(25 + squareSize * 3 + margin, 25 + squareSize * 6 + margin * 2)},
+    {"L", Point(25, 25 + squareSize * 3 + margin)},
+    {"B", Point(25 + squareSize * 9 + margin * 3, 25 + squareSize * 3 + margin)},
     };
 
 map<string,vector<vector<interactiveRect>>> rectangles;
@@ -79,9 +91,9 @@ void pythonAlgorithm(string cubeState){
     solutionFile >> data;
 
     if(data.contains("Solution")){
-        cout << "[SOLUTION]: " << data["Solution"] << endl;
+        solution=data["Solution"];
     }else{
-        cout << "[ERROR]: Invalid Cube State" << endl;
+        solution=data["Error"];
     }
 
     solutionFile.close();
@@ -90,19 +102,22 @@ void pythonAlgorithm(string cubeState){
 void onMouse(int event,int x,int y,int,void*){
 
     if(event==EVENT_LBUTTONDOWN){
-        if(cycle!=0){
+        if(cycle!=0 || allFaceletscoloured){
             Point topLeft={25+8*squareSize+2*margin,25+7*squareSize+2*margin};
             Point bottomRight=topLeft+Point(100,40);
 
             if(topLeft.x <= x && x <=bottomRight.x && topLeft.y <= y && y <=bottomRight.y){
                 vector<string> centers = {};
                 vector<string> faces={"U","R","F","D","L","B"};
+
                 for(const auto& face:faces){
                     const auto& facelets=rectangles[face];
                     const auto& center = facelets[1][1].currentColor;
                     int cnt = count(centers.begin(),centers.end(),center);
+
+                    //checking if there are centers which have two same colors
                     if(cnt>0){
-                        cout << "[ERROR]: Invalid Cube State" << endl;
+                        solution="Invalid Cube State";
                         return;
                     }
                     centers.push_back(center); 
@@ -110,8 +125,11 @@ void onMouse(int event,int x,int y,int,void*){
 
                 string cubeState="";
                 map<string,string> colorTofaceMap;
+
+                //making a map between the faces and colors
                 for(int i=0;i<6;i++) colorTofaceMap[centers[i]]=faces[i];
                 
+                //creating the cubeState string
                 for(const auto& face:faces){
                     const auto& facelets=rectangles[face];
                     for(int row=0;row<3;row++){
@@ -120,7 +138,8 @@ void onMouse(int event,int x,int y,int,void*){
                         }
                     }
                 }
-                
+
+                //calls the algorithm
                 pythonAlgorithm(cubeState);
             } 
         }
@@ -128,10 +147,8 @@ void onMouse(int event,int x,int y,int,void*){
         for (auto &rectmap : rectangles)
             {
                 auto &rect = rectmap.second;
-                for (int row = 0; row < 3; row++)
-                {
-                    for (int col = 0; col < 3; col++)
-                    {
+                for (int row = 0; row < 3; row++){
+                    for (int col = 0; col < 3; col++){
                         if (rect[row][col].topLeft.x <= x && x <= rect[row][col].bottomRight.x &&
                             rect[row][col].topLeft.y <= y && y <= rect[row][col].bottomRight.y)
                         {
@@ -149,15 +166,6 @@ void onMouse(int event,int x,int y,int,void*){
 }
 
 int main(){
-
-    map<string, Point> facePositions = {
-        {"U", Point(25 + squareSize * 3 + margin, 25)},
-        {"R", Point(25 + squareSize * 6 + margin * 2, 25 + squareSize * 3 + margin)},
-        {"F", Point(25 + squareSize * 3 + margin, 25 + squareSize * 3 + margin)},
-        {"D", Point(25 + squareSize * 3 + margin, 25 + squareSize * 6 + margin * 2)},
-        {"L", Point(25, 25 + squareSize * 3 + margin)},
-        {"B", Point(25 + squareSize * 9 + margin * 3, 25 + squareSize * 3 + margin)},
-    };
 
     for(const auto& face:facePositions){
         string faceName = face.first;
@@ -211,9 +219,20 @@ int main(){
     vector<string> listFaces={"U","R","F","D","L","B"};
     string currentFace=listFaces[0];
     string nextFace=listFaces[1];
+    map<string,string> listFacesMap = {
+        {"U","Up"},
+        {"R","Right"},
+        {"F","Front"},
+        {"D","Down"},
+        {"L","Left"},
+        {"B","Back"},
+    };
 
+    namedWindow("Preview",WINDOW_NORMAL); 
+    namedWindow("Camera Feed",WINDOW_NORMAL);
+    resizeWindow("Preview",640,480);
+    resizeWindow("CameraFeed",640,480);
 
-    namedWindow("Preview");
     setMouseCallback("Preview",onMouse);
 
     while(true){
@@ -229,16 +248,31 @@ int main(){
                 for (int col = 0; col < 3; col++){
                     rectangle(preview, rect[row][col].topLeft,rect[row][col].bottomRight,rect[row][col].color, -1);
                     rectangle(preview, rect[row][col].topLeft,rect[row][col].bottomRight,Scalar(0,0,0), 1);
+                    if(rect[row][col].currentColor!=""){
+                        colouredFacelets+=1;
+                    }
                 }
             }
 
             Point center = rect[0][0].topLeft + Point(70, 80);
             putText(preview, faceName, center, FONT_HERSHEY_COMPLEX, 0.5, Scalar(0, 0, 0), 2);
         }
-        
-        putText(preview,"Scan the Face: "+currentFace,Point(450,50),FONT_HERSHEY_COMPLEX,0.7,Scalar(0,0,0),1);
 
-        if(cycle!=0){
+        if(colouredFacelets==54){
+            allFaceletscoloured=true;
+        }
+        colouredFacelets=0;
+
+        putText(preview,"Scan the Face: "+currentFace+"("+listFacesMap[currentFace]+")",Point(400,50),FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1);
+
+        {
+            Point topLeft(0,squareSize * 9 + margin * 2 + 50);
+            Point bottomRight= topLeft + Point(squareSize * 12 + margin * 3 + 50,50);
+            rectangle(preview,topLeft,bottomRight,Scalar(143,255,255),-1);
+            putText(preview,solution,topLeft+Point(15,25),FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1);
+        }
+
+        if( cycle!=0 || allFaceletscoloured){
             Point topLeft={25+8*squareSize+2*margin,25+7*squareSize+2*margin};
             Point bottomRight=topLeft+Point(100,40);
             rectangle(preview,topLeft,bottomRight,Scalar(0,215,255),-1);
@@ -255,6 +289,7 @@ int main(){
             break;
         }
 
+        resize(frame,frame,Size(640,480));
         //flipping the frame for a mirrored view
         flip(frame,frame,1);
         
@@ -274,7 +309,7 @@ int main(){
 
                 Point bottomRight = {topLeft.x + gridSize, topLeft.y + gridSize};
 
-                Point center = {(topLeft.x + bottomRight.x) / 2, (topLeft.y + bottomRight.y) / 2};
+                Point center = {topLeft.x + gridSize/2, topLeft.y + gridSize/2};
 
                 Vec3b pixel = frame.at<Vec3b>(center);
 
@@ -311,7 +346,7 @@ int main(){
 
                     Point bottomRight = {topLeft.x + gridSize, topLeft.y + gridSize};
 
-                    Point center = {(topLeft.x+bottomRight.x)/2,(topLeft.y+bottomRight.y)/2};
+                    Point center = {topLeft.x+ gridSize/2,topLeft.y+ gridSize/2};
 
                     //extracting the pixel frame center of the square
                     Vec3b pixel = frame.at<Vec3b>(center);
