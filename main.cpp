@@ -46,6 +46,18 @@ map<string, Point> facePositions = {
 
 map<string,vector<vector<interactiveRect>>> rectangles;
 
+vector<string> listFaces={"U","R","F","D","L","B"};
+string currentFace=listFaces[0];
+string nextFace=listFaces[1];
+map<string,string> listFacesMap = {
+        {"U","Up"},
+        {"R","Right"},
+        {"F","Front"},
+        {"D","Down"},
+        {"L","Left"},
+        {"B","Back"},
+    };
+
 //function that returns the Euclidean distance between two pixels
 float distanceEuclidean(Vec3b color,Vec3b target){
     return sqrt(pow(target[0]-color[0],2)+pow(target[1]-color[1],2)+pow(target[2]-color[2],2));
@@ -141,7 +153,36 @@ void onMouse(int event,int x,int y,int,void*){
 
                 //calls the algorithm
                 pythonAlgorithm(cubeState);
+                return;
             } 
+        }
+
+        //if reset is clicked
+        {
+            Point topLeft={25+8*squareSize+2*margin,25+7*squareSize+2*margin+50};
+            Point bottomRight=topLeft+Point(100,40);
+            if(topLeft.x <= x && x <=bottomRight.x && topLeft.y <= y && y <=bottomRight.y){
+                
+                for (auto &rectmap : rectangles){
+                    auto &rect = rectmap.second;
+
+                    for (int row = 0; row < 3; row++){
+                        for (int col = 0; col < 3; col++){
+                            rect[row][col].color=Scalar(169,169,169);
+                            rect[row][col].currentColor="";
+                            rect[row][col].nextColor="White";
+                        }
+                    }
+                }
+
+                //resetting global variables
+                cycle=0;
+                currentFace=listFaces[0];
+                nextFace=listFaces[1];
+                allFaceletscoloured=false;
+                solution="";
+
+            }
         }
 
         for (auto &rectmap : rectangles)
@@ -155,7 +196,7 @@ void onMouse(int event,int x,int y,int,void*){
                             rect[row][col].currentColor = rect[row][col].nextColor;
                             rect[row][col].nextColor = colors[((find(colors.begin(), colors.end(), rect[row][col].nextColor) - colors.begin()) + 1) % 6];
                             rect[row][col].color = colorMap[rect[row][col].currentColor];
-                            break;
+                            return;
                         }
                     }
                 }
@@ -216,17 +257,6 @@ int main(){
     Mat canvas = Mat::zeros(Size(width, height), CV_8UC3);
     canvas.setTo(Scalar(255, 255, 224));
 
-    vector<string> listFaces={"U","R","F","D","L","B"};
-    string currentFace=listFaces[0];
-    string nextFace=listFaces[1];
-    map<string,string> listFacesMap = {
-        {"U","Up"},
-        {"R","Right"},
-        {"F","Front"},
-        {"D","Down"},
-        {"L","Left"},
-        {"B","Back"},
-    };
 
     namedWindow("Preview",WINDOW_NORMAL); 
     namedWindow("Camera Feed",WINDOW_NORMAL);
@@ -265,11 +295,23 @@ int main(){
 
         putText(preview,"Scan the Face: "+currentFace+"("+listFacesMap[currentFace]+")",Point(400,50),FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1);
 
+        //write the solution
         {
             Point topLeft(0,squareSize * 9 + margin * 2 + 50);
             Point bottomRight= topLeft + Point(squareSize * 12 + margin * 3 + 50,50);
             rectangle(preview,topLeft,bottomRight,Scalar(143,255,255),-1);
+            rectangle(preview,topLeft,bottomRight,Scalar(0,0,0),1);
             putText(preview,solution,topLeft+Point(15,25),FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1);
+        }
+
+        //reset button
+        {
+            Point topLeft={25+8*squareSize+2*margin,25+7*squareSize+2*margin+50};
+            Point bottomRight=topLeft+Point(100,40);
+            rectangle(preview,topLeft,bottomRight,Scalar(81,116,233),-1);
+            rectangle(preview,topLeft,bottomRight,Scalar(0,0,0),1);
+            Point center = topLeft + Point(30,25);
+            putText(preview,"Reset",center,FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1);
         }
 
         if( cycle!=0 || allFaceletscoloured){
@@ -324,6 +366,15 @@ int main(){
                 //Draw borders for the reference square
                 rectangle(frame,topLeft,bottomRight,Scalar(0,0,0),1);
             }
+        }
+
+        //Instructions on frame
+        {
+            Point topLeft(0,430);
+            Point bottomRight = topLeft + Point(640,50);
+            rectangle(frame,topLeft,bottomRight,Scalar(0,165,255),-1);
+            rectangle(frame,topLeft,bottomRight,Scalar(0,0,0),1);
+            putText(frame,"Press (c) to capture image, (q) to quit",topLeft+Point(20,25),FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1);
         }
 
         //display the frame
