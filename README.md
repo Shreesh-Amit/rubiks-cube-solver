@@ -1,4 +1,4 @@
-# Rubik's Cube Simulator
+# Rubik's Cube Solver
 
 ## Project Description
 This project is a Rubik's Cube simulator that integrates real-world cube capture and solving algorithms. It combines OpenCV for camera interactions, Python's Kociemba library for solving, and C++ for visualization and UI.
