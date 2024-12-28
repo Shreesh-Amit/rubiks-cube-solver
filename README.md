@@ -37,10 +37,12 @@ On Linux:
    sudo apt update
    sudo apt install cmake
    ```
+   
 On macOS:
    ```bash
    bashbrew install cmake
    ```
+
 On Windows:
   Download the installer from CMake's official website.
   Run the installer and add CMake to your system PATH during installation.
