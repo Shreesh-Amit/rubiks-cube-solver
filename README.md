@@ -31,21 +31,21 @@ This project is a Rubik's Cube simulator that integrates real-world cube capture
 3. Install OpenCV and nlohmann/json:
    Follow platform-specific instructions for [OpenCV](https://opencv.org/) and [nlohmann/json](https://github.com/nlohmann/json).
 
-4. Install cmake
-On Linux:
+4. Install cmake\
+   On Linux:\
    ```bash
    sudo apt update
    sudo apt install cmake
    ```
    
-On macOS:
+   On macOS:\
    ```bash
    bashbrew install cmake
    ```
 
-On Windows:
-  Download the installer from CMake's official website.
-  Run the installer and add CMake to your system PATH during installation.
+   On Windows:\
+   Download the installer from CMake's official website.\
+   Run the installer and add CMake to your system PATH during installation.
 
 ## Compilation
 To compile `main.cpp`,use:
