@@ -1,4 +1,5 @@
 *.json
 .vscode/
 a.out
+build/
 
