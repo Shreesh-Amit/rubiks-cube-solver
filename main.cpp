@@ -90,10 +90,10 @@ string closestColor(Vec3b color){
 }
 
 void pythonAlgorithm(string cubeState){
-    string command = "python3 ./algorithm.py "+cubeState+" > ./solution.json";
+    string command = "python3 ../algorithm.py "+cubeState+" > ../solution.json";
     system(command.c_str());
 
-    ifstream solutionFile("./solution.json");
+    ifstream solutionFile("../solution.json");
     if(!solutionFile.is_open()){
         cerr << "[ERROR]: Unable to open solution.json" << endl;
         return;
