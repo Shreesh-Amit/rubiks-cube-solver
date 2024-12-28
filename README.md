@@ -32,16 +32,16 @@ This project is a Rubik's Cube simulator that integrates real-world cube capture
    Follow platform-specific instructions for [OpenCV](https://opencv.org/) and [nlohmann/json](https://github.com/nlohmann/json).
 
 4. Install cmake
-On Linux
+On Linux:
    ```bash
    sudo apt update
    sudo apt install cmake
    ```
-On macOS
+On macOS:
    ```bash
    bashbrew install cmake
    ```
-On Windows
+On Windows:
   Download the installer from CMake's official website.
   Run the installer and add CMake to your system PATH during installation.
 
@@ -54,7 +54,9 @@ To compile `main.cpp`,use:
   ```
 
 ## Running the project
-./solver
+   ```
+   ./solver
+   ```
 
 ## Usage
 - **Capture Cube Faces**: Align the cube and capture face colors using the camera.
