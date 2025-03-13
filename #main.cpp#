@@ -18,23 +18,22 @@ struct interactiveRect{
 int cycle=0;
 int colouredFacelets=0;
 bool allFaceletscoloured=false;
-int squareSize = 50; // Size of each small square in preview page
+int squareSize = 50; // Size of each small square
 int margin = 10;     // Space between faces
 string solution;
 int width = squareSize * 12 + margin * 3 + 50;
 int height = squareSize * 9 + margin * 2 + 100;
 
-vector <string> colors = {"White","Yellow","Red","Orange","Blue","Green"};
+vector <string> colors = {"White","Yellow","Pink","Orange","Blue","Green"};
 
 map<string, Scalar> colorMap = {
         {"White", Scalar(255, 255, 255)},
         {"Yellow", Scalar(0, 255, 255)},
         {"Green", Scalar(144, 238, 144)},
         {"Blue", Scalar(255, 191, 0)},
-        // {"Pink", Scalar(203, 192, 255)},
-        {"Red", Scalar(0,0,255)},
+        {"Pink", Scalar(203, 192, 255)},
         {"Orange", Scalar(0, 165, 255)}
-};
+    };
 
 map<string, Point> facePositions = {
     {"U", Point(25 + squareSize * 3 + margin, 25)},
@@ -70,11 +69,10 @@ string closestColor(Vec3b color){
     map<string, Vec3b> targetColors = {
         {"White", Vec3b(112,118,156)},
         {"Yellow", Vec3b(3, 155, 165)},
-        // {"Pink", Vec3b(89, 66, 182)},
-        {"Red", Vec3b(24, 36, 150)},
+        {"Pink", Vec3b(89, 66, 182)},
         {"Orange", Vec3b(44, 120, 202)},
         {"Blue", Vec3b(112, 114, 97)},
-        {"Green", Vec3b(30, 136, 15)}
+        {"Green", Vec3b(44, 136, 137)}
     };
 
     string closeColor;
@@ -217,12 +215,13 @@ int main(){
         vector<vector<interactiveRect>> face_rectangles;
 
         for(int row=0;row<3;row++){
+
             vector<interactiveRect> rectangle_row;
             for (int col = 0; col < 3; col++) {
                     Point topLeft = origin + Point(col * squareSize, row * squareSize);
                     Point bottomRight = topLeft + Point(squareSize, squareSize);
                     rectangle_row.push_back({topLeft,bottomRight,Scalar(160,169,169),"","White"});
-            }
+                }
             face_rectangles.push_back(rectangle_row);
         }
 
@@ -257,6 +256,7 @@ int main(){
 
     Mat canvas = Mat::zeros(Size(width, height), CV_8UC3);
     canvas.setTo(Scalar(255, 255, 224));
+
 
     namedWindow("Preview",WINDOW_NORMAL); 
     namedWindow("Camera Feed",WINDOW_NORMAL);
@@ -332,7 +332,6 @@ int main(){
         }
 
         resize(frame,frame,Size(640,480));
-        // resize(frame,frame,Size(680,570));
         //flipping the frame for a mirrored view
         flip(frame,frame,1);
         
@@ -424,13 +423,11 @@ int main(){
                         rectangles[currentFace][row][col].nextColor=colors[((find(colors.begin(),colors.end(),approxColor)-colors.begin())+1)%6];
                     }
 
-                    cout << "Square[" << col << "]["<< row << "]: " << pixel << endl;
+                    //cout << "Square[" << col << "]["<< row << "]: " << approxColor << endl;
 
                 }
             }
             
-            cout << "---------------------------------------" << endl;
-
             currentFace=nextFace;
             nextFace=listFaces[((find(listFaces.begin(),listFaces.end(),nextFace)-listFaces.begin())+1)%6];
 
